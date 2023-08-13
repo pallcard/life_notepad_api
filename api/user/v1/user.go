@@ -15,16 +15,19 @@ type UserRes struct {
 	CreateTime string
 	Content    string
 	Images     []string
-	Location   string
 }
 
 type LoginReq struct {
 	g.Meta   `path:"/login" tags:"User" method:"post" summary:"You first hello api"`
 	Email    string `v:"required|length:6,30#请输入邮箱|邮箱错误"`
-	PassWord string `v:"required|length:6,30#请输入密码|密码长度不够"`
+	Password string `v:"required|length:6,30#请输入密码|密码长度不够"`
 }
 
 type LoginRes struct {
-	g.Meta `mime:"application/json"`
-	UserId int
+	g.Meta      `mime:"application/json"`
+	UserId      int
+	Avatar      string
+	NickName    string
+	Description string
+	CreateTime  string
 }

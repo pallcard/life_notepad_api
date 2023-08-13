@@ -52,8 +52,8 @@ func (c *Controller) AddNote(ctx context.Context, req *v1.AddNoteReq) (res *v1.A
 	fmt.Println(req)
 	if len(req.Content) <= 0 {
 		g.RequestFromCtx(ctx).Response.WriteJson(common.Res{
-			Code:  1,
-			Error: "文本内容不能为空",
+			Code:    1,
+			Message: "文本内容不能为空",
 		})
 		return
 	}
