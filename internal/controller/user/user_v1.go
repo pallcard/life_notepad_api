@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/gogf/gf/v2/frame/g"
 	v1 "life_notepad_api/api/user/v1"
+	"life_notepad_api/internal/common"
 )
 
 func (c *Controller) User(ctx context.Context, req *v1.UserReq) (res *v1.UserRes, err error) {
@@ -16,6 +17,26 @@ func (c *Controller) User(ctx context.Context, req *v1.UserReq) (res *v1.UserRes
 			"https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fsafe-img.xhscdn.com%2Fbw1%2F1c5a5c88-3063-4615-905a-a9b9e4c2acb5%3FimageView2%2F2%2Fw%2F1080%2Fformat%2Fjpg&refer=http%3A%2F%2Fsafe-img.xhscdn.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1694020103&t=15637d7ccac5a81aa1e0fa4a558efed9"},
 		Location: "湖北武汉",
 	}
-	g.RequestFromCtx(ctx).Response.WriteJson(userRes)
+	g.RequestFromCtx(ctx).Response.WriteJson(common.Res{
+		Code: 0,
+		Data: userRes,
+	})
+	return
+}
+
+func (c *Controller) Login(ctx context.Context, req *v1.LoginReq) (res *v1.LoginRes, err error) {
+	loginRes := v1.LoginRes{}
+	if req.Email == "" && req.PassWord == "" {
+		loginRes.UserId = 1
+		g.RequestFromCtx(ctx).Response.WriteJson(common.Res{
+			Code: 0,
+			Data: loginRes,
+		})
+	} else {
+		g.RequestFromCtx(ctx).Response.WriteJson(common.Res{
+			Code:  1,
+			Error: "用户名，密码错误",
+		})
+	}
 	return
 }

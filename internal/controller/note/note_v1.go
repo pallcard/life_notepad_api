@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
 	v1 "life_notepad_api/api/note/v1"
+	"life_notepad_api/internal/common"
 )
 
 func (c *Controller) NoteList(ctx context.Context,
@@ -40,6 +41,29 @@ func (c *Controller) NoteList(ctx context.Context,
 		NoteList: list,
 		Total:    total,
 	}
-	g.RequestFromCtx(ctx).Response.WriteJson(noteListRes)
+	g.RequestFromCtx(ctx).Response.WriteJson(common.Res{
+		Code: 0,
+		Data: noteListRes,
+	})
+	return
+}
+
+func (c *Controller) AddNote(ctx context.Context, req *v1.AddNoteReq) (res *v1.AddNoteRes, err error) {
+	fmt.Println(req)
+	if len(req.Content) <= 0 {
+		g.RequestFromCtx(ctx).Response.WriteJson(common.Res{
+			Code:  1,
+			Error: "文本内容不能为空",
+		})
+		return
+	}
+
+	addNoteRes := v1.AddNoteRes{
+		Id: 1,
+	}
+	g.RequestFromCtx(ctx).Response.WriteJson(common.Res{
+		Code: 0,
+		Data: addNoteRes,
+	})
 	return
 }
