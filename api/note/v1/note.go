@@ -18,12 +18,14 @@ type NoteListRes struct {
 }
 
 type NoteItem struct {
+	Id         int
+	UserId     int
 	Avatar     string
 	NickName   string
-	CreateTime string
 	Content    string
 	Images     []string
 	Location   string
+	CreateTime string
 }
 
 type AddNoteReq struct {

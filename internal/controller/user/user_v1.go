@@ -2,9 +2,12 @@ package user
 
 import (
 	"context"
+	"database/sql"
 	"github.com/gogf/gf/v2/frame/g"
 	v1 "life_notepad_api/api/user/v1"
 	"life_notepad_api/internal/common"
+	"life_notepad_api/internal/dao"
+	"life_notepad_api/internal/model/entity"
 )
 
 func (c *Controller) User(ctx context.Context, req *v1.UserReq) (res *v1.UserRes, err error) {
@@ -25,21 +28,33 @@ func (c *Controller) User(ctx context.Context, req *v1.UserReq) (res *v1.UserRes
 
 func (c *Controller) Login(ctx context.Context, req *v1.LoginReq) (res *v1.LoginRes, err error) {
 	loginRes := v1.LoginRes{}
-	if req.Email == "xx@qq.com" && req.Password == "123456" {
-		loginRes.UserId = 1
-		loginRes.Avatar = "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fsafe-img.xhscdn.com%2Fbw1%2F1c5a5c88-3063-4615-905a-a9b9e4c2acb5%3FimageView2%2F2%2Fw%2F1080%2Fformat%2Fjpg&refer=http%3A%2F%2Fsafe-img.xhscdn.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1694020103&t=15637d7ccac5a81aa1e0fa4a558efed9"
-		loginRes.NickName = "开发者"
-		loginRes.Description = "用爱发电的小程序开发者"
-		loginRes.CreateTime = "2022-11-11 11:11:11"
-		g.RequestFromCtx(ctx).Response.WriteJson(common.Res{
-			Code: 0,
-			Data: loginRes,
-		})
-	} else {
+	user := entity.User{}
+	err = dao.User.Ctx(ctx).
+		Where(g.Map{dao.User.Columns().Email: req.Email,
+			dao.User.Columns().Password: req.Password}).Scan(&user)
+	if err != nil && err != sql.ErrNoRows {
 		g.RequestFromCtx(ctx).Response.WriteJson(common.Res{
 			Code:    1,
-			Message: "用户名或密码错误",
+			Message: err.Error(),
 		})
+		return nil, err
 	}
+	if err == sql.ErrNoRows {
+		g.RequestFromCtx(ctx).Response.WriteJson(common.Res{
+			Code:    1,
+			Message: "用户名不存在或密码错误",
+		})
+		return
+	}
+
+	loginRes.UserId = user.Id
+	loginRes.Avatar = user.Avatar
+	loginRes.NickName = user.NickName
+	loginRes.Description = user.Description
+	loginRes.CreateTime = user.CreatedAt.Format("Y-m-d H:i:s")
+	g.RequestFromCtx(ctx).Response.WriteJson(common.Res{
+		Code: 0,
+		Data: loginRes,
+	})
 	return
 }
