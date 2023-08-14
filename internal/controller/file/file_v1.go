@@ -32,6 +32,7 @@ func (c *ControllerV1) FileUpload(ctx context.Context, req *v1.FileUploadReq) (r
 		if err != nil {
 			return nil, gerror.NewCode(gcode.CodeInternalError, err.Error())
 		}
+		names = append(names, fileName)
 	}
 
 	res = &v1.FileUploadRes{
