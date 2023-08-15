@@ -5,9 +5,11 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	v1 "life_notepad_api/api/note/v1"
 	"life_notepad_api/internal/common"
+	"life_notepad_api/internal/common/cos"
 	"life_notepad_api/internal/dao"
 	"life_notepad_api/internal/model/entity"
 	"strings"
+	"time"
 )
 
 func (c *Controller) NoteList(ctx context.Context,
@@ -75,16 +77,35 @@ func (c *Controller) NoteList(ctx context.Context,
 
 	// gen res
 	for _, noteItem := range noteList {
-		images := strings.Split(noteItem.Images, ",")
+		images := make([]string, 0, 9)
+		if len(noteItem.Images) > 0 {
+			for _, imageName := range strings.Split(noteItem.Images, ",") {
+				imageUrl := imageName
+				if !strings.HasPrefix(imageName, "http") {
+					imageUrl, err = cos.Cli.GetPresignedURL(ctx, imageName, 24*time.Hour)
+					if err != nil {
+						continue
+					}
+				}
+				images = append(images, imageUrl)
+			}
+		}
+		avatar := userIdMap[noteItem.UserId].Avatar
+		if !strings.HasPrefix(avatar, "http") {
+			avatar, err = cos.Cli.GetPresignedURL(ctx, avatar, 24*time.Hour)
+			if err != nil {
+				continue
+			}
+		}
 		list = append(list, v1.NoteItem{
 			Id:         noteItem.Id,
 			UserId:     noteItem.UserId,
-			Avatar:     userIdMap[noteItem.UserId].Avatar,
+			Avatar:     avatar,
 			NickName:   userIdMap[noteItem.UserId].NickName,
 			Content:    noteItem.Content,
 			Images:     images,
 			Location:   noteItem.Location,
-			CreateTime: noteItem.CreatedAt.Format("Y-m-d H:i:s"),
+			CreateTime: noteItem.CreatedAt.Local().Format("Y-m-d H:i:s"),
 		})
 	}
 	noteListRes.NoteList = list

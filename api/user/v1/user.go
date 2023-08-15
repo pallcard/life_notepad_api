@@ -31,3 +31,20 @@ type LoginRes struct {
 	Description string
 	CreateTime  string
 }
+
+type UpdateUserReq struct {
+	g.Meta      `path:"/updateUser" tags:"User" method:"post" summary:"You first hello api"`
+	UserId      int `v:"required#UserId不能为空"`
+	Avatar      string
+	NickName    string
+	Description string
+}
+
+type UpdateUserRes struct {
+	g.Meta      `mime:"application/json"`
+	UserId      int
+	Avatar      string
+	NickName    string
+	Description string
+	CreateTime  string
+}

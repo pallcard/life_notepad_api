@@ -3,11 +3,15 @@ package user
 import (
 	"context"
 	"database/sql"
+	"github.com/gogf/gf/v2/errors/gcode"
+	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	v1 "life_notepad_api/api/user/v1"
 	"life_notepad_api/internal/common"
+	"life_notepad_api/internal/common/cos"
 	"life_notepad_api/internal/dao"
 	"life_notepad_api/internal/model/entity"
+	"time"
 )
 
 func (c *Controller) User(ctx context.Context, req *v1.UserReq) (res *v1.UserRes, err error) {
@@ -51,10 +55,57 @@ func (c *Controller) Login(ctx context.Context, req *v1.LoginReq) (res *v1.Login
 	loginRes.Avatar = user.Avatar
 	loginRes.NickName = user.NickName
 	loginRes.Description = user.Description
-	loginRes.CreateTime = user.CreatedAt.Format("Y-m-d H:i:s")
+	loginRes.CreateTime = user.CreatedAt.Local().Format("Y-m-d H:i:s")
 	g.RequestFromCtx(ctx).Response.WriteJson(common.Res{
 		Code: 0,
 		Data: loginRes,
 	})
 	return
+}
+
+func (c *Controller) UpdateUser(ctx context.Context, req *v1.UpdateUserReq) (res *v1.UpdateUserRes, err error) {
+
+	user := entity.User{}
+	err = dao.User.Ctx(ctx).
+		Where(g.Map{dao.User.Columns().Id: req.UserId}).Scan(&user)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, gerror.NewCode(gcode.CodeInternalError, err.Error())
+	}
+	res = &v1.UpdateUserRes{
+		UserId:      user.Id,
+		Avatar:      user.Avatar,
+		NickName:    user.NickName,
+		Description: user.Description,
+		CreateTime:  user.CreatedAt.Local().Format("Y-m-d H:i:s"),
+	}
+
+	data := g.Map{}
+	if len(req.Avatar) > 0 {
+		signAvatar, err := cos.Cli.GetPresignedURL(ctx, req.Avatar, 24*365*10*time.Hour)
+		if err != nil {
+			return nil, gerror.NewCode(gcode.CodeInternalError, err.Error())
+		}
+		data[dao.User.Columns().Avatar] = signAvatar
+		res.Avatar = signAvatar
+	}
+
+	if len(req.NickName) > 0 {
+		data[dao.User.Columns().NickName] = req.NickName
+		res.NickName = req.NickName
+	}
+
+	if len(req.Description) > 0 {
+		data[dao.User.Columns().NickName] = req.Description
+		res.Description = req.Description
+	}
+
+	if len(data) > 0 {
+		dao.User.Ctx(ctx).Data(data).
+			Where(g.Map{dao.User.Columns().Id: req.UserId}).Update()
+		if err != nil && err != sql.ErrNoRows {
+			return nil, gerror.NewCode(gcode.CodeInternalError, err.Error())
+		}
+	}
+
+	return res, nil
 }
