@@ -92,7 +92,7 @@ func (c *Controller) NoteList(ctx context.Context,
 		}
 		avatar := userIdMap[noteItem.UserId].Avatar
 		if !strings.HasPrefix(avatar, "http") {
-			avatar, err = cos.Cli.GetPresignedURL(ctx, avatar, 24*time.Hour)
+			avatar, err = cos.Cli.GetPresignedURL(ctx, avatar, 365*24*time.Hour)
 			if err != nil {
 				continue
 			}

@@ -9,14 +9,15 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 )
 
-// Note is the golang structure of table t_note for DAO operations like Where/Data.
-type Note struct {
-	g.Meta    `orm:"table:t_note, do:true"`
+// Chat is the golang structure of table t_chat for DAO operations like Where/Data.
+type Chat struct {
+	g.Meta    `orm:"table:t_chat, do:true"`
 	Id        interface{} //
-	UserId    interface{} // 用户ID
-	Content   interface{} // 内容
-	Images    interface{} // 图片
-	Location  interface{} // 位置
+	UserId    interface{} // 用户ID，逗号分割
+	SenderId  interface{} // 发送者ID,最新的一条
+	Content   interface{} // 内容，最新的一条
+	IsLiked   interface{} // 是否链接 1是 2不是
+	Unread    interface{} // 未读 1未读 2已读
 	CreatedAt *gtime.Time //
 	UpdatedAt *gtime.Time //
 	DeletedAt *gtime.Time //

@@ -8,6 +8,7 @@ import (
 	"github.com/gogf/gf/v2/os/gcmd"
 	"github.com/gogf/gf/v2/os/glog"
 	"life_notepad_api/internal/controller/file"
+	"life_notepad_api/internal/controller/message"
 	"life_notepad_api/internal/controller/note"
 	"life_notepad_api/internal/controller/user"
 
@@ -36,6 +37,7 @@ var (
 					user.NewV1(),
 					note.NewV1(),
 					file.NewV1(),
+					message.NewV1(),
 				)
 			})
 			s.BindHandler("/ws", func(r *ghttp.Request) {
