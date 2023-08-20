@@ -98,8 +98,8 @@ func (c *Controller) MessageList(ctx context.Context,
 
 	// count
 	cond := g.Map{
-		dao.Message.Columns().SenderId:   req.SenderId,
-		dao.Message.Columns().ReceiverId: req.ReceiverId,
+		dao.Message.Columns().SenderId:   []int{req.SenderId, req.ReceiverId},
+		dao.Message.Columns().ReceiverId: []int{req.SenderId, req.ReceiverId},
 	}
 	total, err := dao.Message.Ctx(ctx).Where(cond).Count()
 	if err != nil {

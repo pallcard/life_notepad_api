@@ -7,6 +7,7 @@ import (
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gcmd"
 	"github.com/gogf/gf/v2/os/glog"
+	"life_notepad_api/internal/controller/chat"
 	"life_notepad_api/internal/controller/file"
 	"life_notepad_api/internal/controller/message"
 	"life_notepad_api/internal/controller/note"
@@ -32,6 +33,7 @@ var (
 			s.Group("/", func(group *ghttp.RouterGroup) {
 				group.Middleware(ghttp.MiddlewareHandlerResponse)
 				group.Middleware(MiddlewareCORS)
+				group.ALL("/chat", chat.NewV1())
 				group.Bind(
 					hello.NewV1(),
 					user.NewV1(),
