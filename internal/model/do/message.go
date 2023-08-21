@@ -16,7 +16,7 @@ type Message struct {
 	SenderId   interface{} // 发送者ID
 	ReceiverId interface{} // 接收者ID
 	Content    interface{} // 内容
-	IsLiked    interface{} // 是否链接 1是 2不是
+	Link       interface{} // 是否链接 1是 2不是
 	Unread     interface{} // 未读 1未读 2已读
 	CreatedAt  *gtime.Time //
 	UpdatedAt  *gtime.Time //

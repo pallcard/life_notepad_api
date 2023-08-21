@@ -24,7 +24,7 @@ type MessageColumns struct {
 	SenderId   string // 发送者ID
 	ReceiverId string // 接收者ID
 	Content    string // 内容
-	IsLiked    string // 是否链接 1是 2不是
+	Link       string // 是否链接 1是 2不是
 	Unread     string // 未读 1未读 2已读
 	CreatedAt  string //
 	UpdatedAt  string //
@@ -37,7 +37,7 @@ var messageColumns = MessageColumns{
 	SenderId:   "sender_id",
 	ReceiverId: "receiver_id",
 	Content:    "content",
-	IsLiked:    "is_liked",
+	Link:       "link",
 	Unread:     "unread",
 	CreatedAt:  "created_at",
 	UpdatedAt:  "updated_at",

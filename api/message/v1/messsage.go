@@ -23,7 +23,7 @@ type ChatItem struct {
 	SenderAvatar string //发送头像
 	NickName     string //发送昵称
 	Content      string //内容
-	IsLiked      int    //是否链接 1是 2不是
+	Link         int    //是否链接 1是 2不是
 	Unread       int    //未读 1未读 2已读
 	CreateTime   string
 }
@@ -47,7 +47,7 @@ type MessageItem struct {
 	SenderId   int    //发送者
 	ReceiverId int    //接收者
 	Content    string //内容
-	IsLiked    int    //是否链接 1是 2不是
+	Link       int    //是否链接 1是 2不是
 	Unread     int    //未读 1未读 2已读
 	CreateTime string
 }

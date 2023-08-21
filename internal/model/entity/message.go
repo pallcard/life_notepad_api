@@ -14,7 +14,7 @@ type Message struct {
 	SenderId   int         `json:"senderId"   description:"发送者ID"`
 	ReceiverId int         `json:"receiverId" description:"接收者ID"`
 	Content    string      `json:"content"    description:"内容"`
-	IsLiked    int         `json:"isLiked"    description:"是否链接 1是 2不是"`
+	Link       int         `json:"link"       description:"是否链接 1是 2不是"`
 	Unread     int         `json:"unread"     description:"未读 1未读 2已读"`
 	CreatedAt  *gtime.Time `json:"createdAt"  description:""`
 	UpdatedAt  *gtime.Time `json:"updatedAt"  description:""`

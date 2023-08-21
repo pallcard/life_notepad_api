@@ -3,7 +3,6 @@ package message
 import (
 	"context"
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/gogf/gf/v2/util/gconv"
 	v1 "life_notepad_api/api/message/v1"
 	"life_notepad_api/internal/common"
 	"life_notepad_api/internal/common/cos"
@@ -17,7 +16,7 @@ func (c *Controller) ChatList(ctx context.Context,
 	req *v1.ChatListReq) (res *v1.ChatListRes, err error) {
 	// count
 	cond := g.Map{
-		dao.Chat.Columns().UserId + " like ? ": "%" + gconv.String(req.UserId) + "%",
+		dao.Chat.Columns().ReceiverId: req.UserId,
 	}
 	total, err := dao.Chat.Ctx(ctx).Where(cond).Count()
 	if err != nil {
@@ -84,7 +83,7 @@ func (c *Controller) ChatList(ctx context.Context,
 			NickName:     userIdMap[chatItem.SenderId].NickName,
 			Content:      chatItem.Content,
 			Unread:       chatItem.Unread,
-			IsLiked:      chatItem.IsLiked,
+			Link:         chatItem.Link,
 			CreateTime:   chatItem.CreatedAt.Local().Format("Y-m-d H:i:s"),
 		})
 	}
@@ -137,7 +136,7 @@ func (c *Controller) MessageList(ctx context.Context,
 			ReceiverId: messageItem.ReceiverId,
 			Content:    messageItem.Content,
 			Unread:     messageItem.Unread,
-			IsLiked:    messageItem.IsLiked,
+			Link:       messageItem.Link,
 			CreateTime: messageItem.CreatedAt.Local().Format("Y-m-d H:i:s"),
 		})
 	}

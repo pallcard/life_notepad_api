@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/container/garray"
 	"github.com/gogf/gf/v2/encoding/ghtml"
@@ -10,7 +11,10 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gorilla/websocket"
 	"life_notepad_api/internal/consts"
+	"life_notepad_api/internal/dao"
 	"life_notepad_api/internal/model"
+	"life_notepad_api/internal/model/entity"
+	"strings"
 )
 
 func (c *Controller) WebSocket(r *ghttp.Request) {
@@ -37,7 +41,7 @@ func (c *Controller) WebSocket(r *ghttp.Request) {
 	userWsMap.Set(userId, ws)
 
 	// 初始化后向所有客户端发送上线消息
-	c.writeUserListToClient()
+	//c.writeUserListToClient()
 
 	for {
 		// 阻塞读取WS数据
@@ -48,62 +52,57 @@ func (c *Controller) WebSocket(r *ghttp.Request) {
 			userIds.Remove(userId)
 			userWsMap.Remove(userId)
 			// 通知所有客户端当前用户已下线
-			c.writeUserListToClient()
+			//c.writeUserListToClient()
 			break
 		}
 		// JSON参数解析
 		if err := gjson.DecodeTo(msgByte, msg); err != nil {
 			c.write(ws, model.ChatMsg{
-				Type: "error",
-				Data: "消息格式不正确: " + err.Error(),
-				From: "",
+				Type:       "error",
+				Data:       "消息格式不正确: " + err.Error(),
+				SenderId:   userId,
+				ReceiverId: "",
 			})
 			continue
 		}
-		// 数据校验
-		//if err := gvalid.CheckStruct(msg, nil); err != nil {
-		//	c.write(ws, model.ChatMsg{
-		//		Type: "error",
-		//		Data: gerror.Current(err).Error(),
-		//		From: "",
-		//	})
-		//	continue
-		//}
-		msg.From = userId
 
 		// WS操作类型
 		switch msg.Type {
 		//单发消息
-		case "sendTo":
+		case consts.ChatTypeSingle:
 			// 发送间隔检查
 			intervalKey := fmt.Sprintf("%p", ws)
 			if ok, _ := cache.SetIfNotExist(r.Context(), intervalKey, struct{}{}, consts.SendInterval); !ok {
 				c.write(ws, model.ChatMsg{
-					Type: "error",
-					Data: "您的消息发送得过于频繁，请休息下再重试",
-					From: "",
+					Type:       consts.ChatTypeError,
+					Data:       "您的消息发送得过于频繁，请休息下再重试",
+					SenderId:   userId,
+					ReceiverId: "",
 				})
 				continue
 			}
-			// 有消息时，群发消息
+			// 有消息时，单发消息
 			if msg.Data != nil {
-				if err = c.writeToUser(ghtml.SpecialChars(msg.From),
+				if err = c.writeToUser(r.Context(), msg.ReceiverId,
 					model.ChatMsg{
-						Type: "send",
-						Data: ghtml.SpecialChars(gconv.String(msg.Data)),
-						From: ghtml.SpecialChars(msg.From),
+						Type:       consts.ChatTypeSingle,
+						Data:       gconv.String(msg.Data),
+						SenderId:   userId,
+						ReceiverId: msg.ReceiverId,
 					}); err != nil {
+					g.Log().Error(r.Context(), err)
 				}
 			}
 		// 发送消息
-		case "send":
+		case consts.ChatTypeGroup:
 			// 发送间隔检查
 			intervalKey := fmt.Sprintf("%p", ws)
 			if ok, _ := cache.SetIfNotExist(r.Context(), intervalKey, struct{}{}, consts.SendInterval); !ok {
 				c.write(ws, model.ChatMsg{
-					Type: "error",
-					Data: "您的消息发送得过于频繁，请休息下再重试",
-					From: "",
+					Type:       consts.ChatTypeError,
+					Data:       "您的消息发送得过于频繁，请休息下再重试",
+					SenderId:   userId,
+					ReceiverId: "",
 				})
 				continue
 			}
@@ -111,11 +110,12 @@ func (c *Controller) WebSocket(r *ghttp.Request) {
 			if msg.Data != nil {
 				if err = c.writeGroup(
 					model.ChatMsg{
-						Type: "send",
-						Data: ghtml.SpecialChars(gconv.String(msg.Data)),
-						From: ghtml.SpecialChars(msg.From),
+						Type:       consts.ChatTypeGroup,
+						Data:       ghtml.SpecialChars(gconv.String(msg.Data)),
+						SenderId:   userId,
+						ReceiverId: msg.ReceiverId,
 					}); err != nil {
-					//g.Log().Error(err)
+					g.Log().Error(r.Context(), err)
 				}
 			}
 		}
@@ -123,26 +123,23 @@ func (c *Controller) WebSocket(r *ghttp.Request) {
 }
 
 // PushChatToUsers http向指定用户发消息
-func (a *Controller) PushChatToUsers(r *ghttp.Request) {
-	var name string = "Runoob"
-	var (
-		err error
-	)
+func (c *Controller) PushChatToUsers(r *ghttp.Request) {
 	msg := &model.ChatMsg{}
 	msg.Data = r.Get("data").String()
-	msg.From = r.Get("from").String()
-	name = r.Get("name").String()
+	msg.SenderId = r.Get("SenderId").String()
+	msg.ReceiverId = r.Get("ReceiverId").String()
 	fmt.Print(msg)
-	if name != "" && userWsMap.Get(name) != nil {
+	if msg.ReceiverId != "" && userWsMap.Get(msg.ReceiverId) != nil {
 		// 有消息时，群发消息
 		if msg.Data != nil {
-			if err = a.writeToUser(name,
+			if err := c.writeToUser(r.Context(), msg.ReceiverId,
 				model.ChatMsg{
-					Type: "send",
-					Data: ghtml.SpecialChars(gconv.String(msg.Data)),
-					From: ghtml.SpecialChars(msg.From),
+					Type:       consts.ChatTypeSingle,
+					Data:       gconv.String(msg.Data),
+					SenderId:   msg.SenderId,
+					ReceiverId: msg.ReceiverId,
 				}); err != nil {
-				//g.Log().Error(err)
+				g.Log().Error(r.Context(), err)
 			}
 		}
 	} else {
@@ -151,55 +148,106 @@ func (a *Controller) PushChatToUsers(r *ghttp.Request) {
 
 }
 
-// http群发消息
-func (a *Controller) PushChat(r *ghttp.Request) {
-	fmt.Print(a)
+// PushChat http群发消息
+func (c *Controller) PushChat(r *ghttp.Request) {
+	fmt.Print(c)
 	fmt.Print(r)
 	var (
 		err error
 	)
 	msg := &model.ChatMsg{}
 	msg.Data = r.Get("name").String()
-	msg.From = r.Get("from").String()
+	msg.SenderId = r.Get("from").String()
 	fmt.Print(msg)
 	// 有消息时，群发消息
 	if msg.Data != nil {
-		if err = a.writeGroup(
+		if err = c.writeGroup(
 			model.ChatMsg{
-				Type: "send",
-				Data: ghtml.SpecialChars(gconv.String(msg.Data)),
-				From: ghtml.SpecialChars(msg.From),
+				Type:     "send",
+				Data:     gconv.String(msg.Data),
+				SenderId: msg.SenderId,
 			}); err != nil {
-			//g.Log().Error(err)
+			g.Log().Error(r.Context(), err)
 		}
 	}
 }
 
 // 向客户端写入消息。
 // 内部方法不会自动注册到路由中。
-func (a *Controller) write(ws *ghttp.WebSocket, msg model.ChatMsg) error {
+func (c *Controller) write(ws *ghttp.WebSocket, msg model.ChatMsg) error {
 	msgBytes, err := gjson.Encode(msg)
 	if err != nil {
 		return err
 	}
-	return ws.WriteMessage(websocket.TextMessage, msgBytes)
+	return ws.WriteMessage(websocket.BinaryMessage, msgBytes)
 }
 
 // 向指定用户名客户端群发消息。
 // 内部方法不会自动注册到路由中。
-func (a *Controller) writeToUser(user string, msg model.ChatMsg) error {
-	b, err := gjson.Encode(msg)
+func (c *Controller) writeToUser(ctx context.Context, user string, msg model.ChatMsg) error {
+	msgBytes, err := gjson.Encode(msg)
 	if err != nil {
 		return err
 	}
-	userWsMap.Get(user).(*ghttp.WebSocket).WriteMessage(websocket.TextMessage, []byte(b))
+	// send
+	userWs := userWsMap.Get(user)
+	if userWs != nil {
+		err = userWs.(*ghttp.WebSocket).WriteMessage(websocket.TextMessage, msgBytes)
+		if err != nil {
+			return err
+		}
+	}
+
+	// db todo trans
+	msgData := gconv.String(msg.Data)
+	link := 2
+	if strings.HasPrefix(msgData, "[link]") {
+		msgData = strings.TrimLeft(msgData, "[link]")
+		link = 1
+	}
+	_, err = dao.Message.Ctx(ctx).InsertIgnore(entity.Message{
+		SenderId:   gconv.Int(msg.SenderId),
+		ReceiverId: gconv.Int(msg.ReceiverId),
+		Content:    msgData,
+		Link:       link,
+		Unread:     1,
+	})
+	if err != nil {
+		return err
+	}
+
+	result, err := dao.Chat.Ctx(ctx).Save(entity.Chat{
+		ReceiverId: gconv.Int(msg.ReceiverId),
+		SenderId:   gconv.Int(msg.SenderId),
+		Content:    msgData,
+		Link:       link,
+		Unread:     1,
+	})
+	if err != nil {
+		return err
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 1 { // 插入,首次插入
+		_, err := dao.Chat.Ctx(ctx).Save(entity.Chat{
+			ReceiverId: gconv.Int(msg.SenderId),
+			SenderId:   gconv.Int(msg.ReceiverId),
+			Content:    "",
+			Link:       2,
+			Unread:     2,
+		})
+		if err != nil {
+			return err
+		}
+
+	}
+
 	return nil
 }
 
 // 向所有客户端群发消息。
 // 内部方法不会自动注册到路由中。
-func (a *Controller) writeGroup(msg model.ChatMsg) error {
-	b, err := gjson.Encode(msg)
+func (c *Controller) writeGroup(msg model.ChatMsg) error {
+	msgBytes, err := gjson.Encode(msg)
 	if err != nil {
 		return err
 	}
@@ -207,7 +255,10 @@ func (a *Controller) writeGroup(msg model.ChatMsg) error {
 	userWsMap.RLockFunc(func(m map[interface{}]interface{}) {
 		for user := range m {
 			fmt.Print(user)
-			m[user].(*ghttp.WebSocket).WriteMessage(websocket.TextMessage, []byte(b))
+			err := m[user].(*ghttp.WebSocket).WriteMessage(websocket.TextMessage, msgBytes)
+			if err != nil {
+				return
+			}
 		}
 	})
 	return nil
@@ -215,16 +266,17 @@ func (a *Controller) writeGroup(msg model.ChatMsg) error {
 
 // 向客户端返回用户列表。
 // 内部方法不会自动注册到路由中。
-func (a *Controller) writeUserListToClient() error {
+func (c *Controller) writeUserListToClient() error {
 	array := garray.NewSortedStrArray()
 	userWsMap.Iterator(func(k interface{}, v interface{}) bool {
 		array.Add(gconv.String(k))
 		return true
 	})
-	if err := a.writeGroup(model.ChatMsg{
-		Type: "list",
-		Data: array.Slice(),
-		From: "",
+	if err := c.writeGroup(model.ChatMsg{
+		Type:       "list",
+		Data:       array.Slice(),
+		SenderId:   "",
+		ReceiverId: "",
 	}); err != nil {
 		return err
 	}

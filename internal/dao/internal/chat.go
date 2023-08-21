@@ -20,28 +20,28 @@ type ChatDao struct {
 
 // ChatColumns defines and stores column names for table t_chat.
 type ChatColumns struct {
-	Id        string //
-	UserId    string // 用户ID，逗号分割
-	SenderId  string // 发送者ID,最新的一条
-	Content   string // 内容，最新的一条
-	IsLiked   string // 是否链接 1是 2不是
-	Unread    string // 未读 1未读 2已读
-	CreatedAt string //
-	UpdatedAt string //
-	DeletedAt string //
+	Id         string //
+	SenderId   string // 发送者ID,最新的一条
+	ReceiverId string // 接收者ID，逗号分割
+	Content    string // 内容，最新的一条
+	Link       string // 是否链接 1是 2不是
+	Unread     string // 未读 1未读 2已读
+	CreatedAt  string //
+	UpdatedAt  string //
+	DeletedAt  string //
 }
 
 // chatColumns holds the columns for table t_chat.
 var chatColumns = ChatColumns{
-	Id:        "id",
-	UserId:    "user_id",
-	SenderId:  "sender_id",
-	Content:   "content",
-	IsLiked:   "is_liked",
-	Unread:    "unread",
-	CreatedAt: "created_at",
-	UpdatedAt: "updated_at",
-	DeletedAt: "deleted_at",
+	Id:         "id",
+	SenderId:   "sender_id",
+	ReceiverId: "receiver_id",
+	Content:    "content",
+	Link:       "link",
+	Unread:     "unread",
+	CreatedAt:  "created_at",
+	UpdatedAt:  "updated_at",
+	DeletedAt:  "deleted_at",
 }
 
 // NewChatDao creates and returns a new DAO object for table data access.

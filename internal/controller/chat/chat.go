@@ -7,10 +7,18 @@ import (
 	"life_notepad_api/api/chat"
 )
 
-type Controller struct{}
+type Controller struct {
+	UserIdWsMap *gmap.Map
+	UserIds     *gset.StrSet
+	Cache       *gcache.Cache
+}
 
 func NewV1() chat.IChatV1 {
-	return &Controller{}
+	return &Controller{
+		UserIdWsMap: gmap.New(true),       //userId: ws
+		UserIds:     gset.NewStrSet(true), // userIds
+		Cache:       gcache.New(),         // 使用特定的缓存对象，不使用全局缓存对象
+	}
 }
 
 var (
