@@ -15,6 +15,7 @@ import (
 	"life_notepad_api/internal/model"
 	"life_notepad_api/internal/model/entity"
 	"strings"
+	"time"
 )
 
 func (c *Controller) WebSocket(r *ghttp.Request) {
@@ -89,6 +90,7 @@ func (c *Controller) WebSocket(r *ghttp.Request) {
 						Data:       gconv.String(msg.Data),
 						SenderId:   userId,
 						ReceiverId: msg.ReceiverId,
+						CreateTime: time.Now().Format("2006-01-02 15:04:05"),
 					}); err != nil {
 					g.Log().Error(r.Context(), err)
 				}
@@ -103,6 +105,7 @@ func (c *Controller) WebSocket(r *ghttp.Request) {
 					Data:       "您的消息发送得过于频繁，请休息下再重试",
 					SenderId:   userId,
 					ReceiverId: "",
+					CreateTime: time.Now().Format("2006-01-02 15:04:05"),
 				})
 				continue
 			}
@@ -138,6 +141,7 @@ func (c *Controller) PushChatToUsers(r *ghttp.Request) {
 					Data:       gconv.String(msg.Data),
 					SenderId:   msg.SenderId,
 					ReceiverId: msg.ReceiverId,
+					CreateTime: time.Now().Format("2006-01-02 15:04:05"),
 				}); err != nil {
 				g.Log().Error(r.Context(), err)
 			}
@@ -216,29 +220,41 @@ func (c *Controller) writeToUser(ctx context.Context, user string, msg model.Cha
 		return err
 	}
 
-	result, err := dao.Chat.Ctx(ctx).Save(entity.Chat{
-		ReceiverId: gconv.Int(msg.ReceiverId),
-		SenderId:   gconv.Int(msg.SenderId),
-		Content:    msgData,
-		Link:       link,
-		Unread:     1,
+	count, err := dao.Chat.Ctx(ctx).Count(g.Map{
+		dao.Chat.Columns().ReceiverId: msg.ReceiverId,
+		dao.Chat.Columns().SenderId:   msg.SenderId,
 	})
 	if err != nil {
 		return err
 	}
-	rows, _ := result.RowsAffected()
-	if rows == 1 { // 插入,首次插入
-		_, err := dao.Chat.Ctx(ctx).Save(entity.Chat{
-			ReceiverId: gconv.Int(msg.SenderId),
-			SenderId:   gconv.Int(msg.ReceiverId),
-			Content:    "",
-			Link:       2,
-			Unread:     2,
+	if count > 0 {
+		_, err := g.DB().Exec(ctx,
+			"update t_chat set unread = unread+1, content= ?, link= ?  where sender_id = ? and receiver_id = ?;",
+			msgData, link, msg.SenderId, msg.ReceiverId)
+		if err != nil {
+			return err
+		}
+	} else {
+		_, err := dao.Chat.Ctx(ctx).OmitEmpty().Save(entity.Chat{
+			ReceiverId: gconv.Int(msg.ReceiverId),
+			SenderId:   gconv.Int(msg.SenderId),
+			Content:    msgData,
+			Link:       link,
+			Unread:     1,
 		})
 		if err != nil {
 			return err
 		}
-
+		_, err = dao.Chat.Ctx(ctx).OmitEmpty().Save(entity.Chat{
+			ReceiverId: gconv.Int(msg.SenderId),
+			SenderId:   gconv.Int(msg.ReceiverId),
+			Content:    "",
+			Link:       2,
+			Unread:     0,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

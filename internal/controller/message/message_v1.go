@@ -141,5 +141,11 @@ func (c *Controller) MessageList(ctx context.Context,
 		})
 	}
 	res.MessageList = list
+
+	dao.Chat.Ctx(ctx).Where(g.Map{
+		dao.Message.Columns().ReceiverId: req.SenderId,
+	}).Update(g.Map{
+		dao.Message.Columns().Unread: 0,
+	})
 	return
 }
